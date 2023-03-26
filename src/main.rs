@@ -45,7 +45,7 @@ fn main() {
         }
 
         let request_str = format!(
-            "https://{}/setRGBA?r={}&g={}&b={}",
+            "http://{}/setRGBA?r={}&g={}&b={}",
             SETTINGS.stripe_server_endpoint, tot_r, tot_g, tot_b
         );
         let resp = get(request_str);
@@ -53,6 +53,6 @@ fn main() {
             eprintln!("{:?}", resp.err());
         }
 
-        sleep(Duration::from_millis(200));
+        sleep(Duration::from_millis(500));
     }
 }
