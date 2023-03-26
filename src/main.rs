@@ -1,4 +1,3 @@
-use std::fmt::format;
 use std::thread::sleep;
 use std::time::Duration;
 use x11cap::*;
@@ -6,6 +5,7 @@ use x11cap::*;
 use reqwest::blocking::get;
 
 fn main() {
+    println!("Starting RGB LED Blacklight...");
     let mut capturer = Capturer::new(CaptureSource::Monitor(0)).unwrap();
 
     loop {
@@ -26,16 +26,16 @@ fn main() {
         let tot_g = tot_g / size;
         let tot_b = tot_b / size;
 
-        //println!("Avg: {:?}", (tot_r / size, tot_g / size, tot_b / size));
-
         let request_str = format!(
-            "https://stripe.fritz.box/SetRGBA&r={}?g={}?b={}",
+            "https://stripe.fritz.box/setRGBA?r={}&g={}&b={}",
             tot_r, tot_g, tot_b
         );
-        println!("making request: {}", request_str);
 
-        let resp = get(request_str)?
+        let resp = get(request_str);
+        if resp.is_err() {
+            eprintln!("{:?}", resp.err());
+        }
 
-        sleep(Duration::from_millis(1000));
+        sleep(Duration::from_millis(200));
     }
 }
