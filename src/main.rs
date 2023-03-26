@@ -1,11 +1,21 @@
-use std::thread::sleep;
-use std::time::Duration;
+use reqwest::blocking::get;
+use srgb;
+use std::{thread::sleep, time::Duration};
 use x11cap::*;
 
-use reqwest::blocking::get;
+#[toml_cfg::toml_config]
+struct Settings {
+    #[default("stripe.local")]
+    stripe_server_endpoint: &'static str,
+    #[default(false)]
+    use_linear_rgb: bool,
+}
 
 fn main() {
-    println!("Starting RGB LED Blacklight...");
+    println!(
+        "Starting RGB LED Blacklight to endpoint: {}...",
+        SETTINGS.stripe_server_endpoint
+    );
     let mut capturer = Capturer::new(CaptureSource::Monitor(0)).unwrap();
 
     loop {
@@ -22,15 +32,22 @@ fn main() {
             tot_b += b as u64;
         }
 
-        let tot_r = tot_r / size;
-        let tot_g = tot_g / size;
-        let tot_b = tot_b / size;
+        let mut tot_r: u8 = (tot_r / size) as u8;
+        let mut tot_g: u8 = (tot_g / size) as u8;
+        let mut tot_b: u8 = (tot_b / size) as u8;
+
+        if SETTINGS.use_linear_rgb {
+            let [r, g, b] = srgb::gamma::linear_from_u8([tot_r, tot_g, tot_b]);
+
+            tot_r = (r * 255.0) as u8;
+            tot_g = (g * 255.0) as u8;
+            tot_b = (b * 255.0) as u8;
+        }
 
         let request_str = format!(
-            "https://stripe.fritz.box/setRGBA?r={}&g={}&b={}",
-            tot_r, tot_g, tot_b
+            "https://{}/setRGBA?r={}&g={}&b={}",
+            SETTINGS.stripe_server_endpoint, tot_r, tot_g, tot_b
         );
-
         let resp = get(request_str);
         if resp.is_err() {
             eprintln!("{:?}", resp.err());
