@@ -18,3 +18,4 @@ Options:
 
 ## TODO
 - do not send setRGBA request, if screen barely changed
+- smooth out RGB changes which are "too intense" -> maybe use some kind of moving average?
