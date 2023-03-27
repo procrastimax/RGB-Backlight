@@ -1,22 +1,49 @@
+use clap::Parser;
 use reqwest::blocking::get;
 use srgb;
 use std::{thread::sleep, time::Duration};
 use x11cap::*;
 
+#[derive(Parser, Debug)]
+#[command(author,version,about,long_about=None)]
+struct Args {
+    #[arg(short, long, default_value_t = String::from("stripe.local"))]
+    endpoint: String,
+
+    #[arg(short, long, default_value_t = 500)]
+    wait_delay: u64,
+
+    #[arg(short, long, default_value_t = false)]
+    use_linear_rgb: bool,
+
+    #[arg(short, long, default_value_t = String::from("http"))]
+    protocol: String,
+
+    #[arg(short, long, default_value_t = 0)]
+    monitor: u8,
+}
+
 #[toml_cfg::toml_config]
 struct Settings {
-    #[default("stripe.local")]
+    #[default("")]
     stripe_server_endpoint: &'static str,
-    #[default(false)]
-    use_linear_rgb: bool,
 }
 
 fn main() {
+    let args = Args::parse();
+
+    let mut endpoint: String = args.endpoint;
+
+    // use compiled-in endpoint setting if it set
+    if SETTINGS.stripe_server_endpoint.len() > 0 {
+        endpoint = SETTINGS.stripe_server_endpoint.to_string();
+    }
+
     println!(
-        "Starting RGB LED Blacklight to endpoint: {}...",
-        SETTINGS.stripe_server_endpoint
+        "Starting RGB LED Blacklight to endpoint: {}://{}...",
+        args.protocol, endpoint
     );
-    let mut capturer = Capturer::new(CaptureSource::Monitor(0)).unwrap();
+    let mut capturer = Capturer::new(CaptureSource::Monitor(args.monitor.into())).unwrap();
 
     loop {
         let ps = capturer.capture_frame().unwrap();
@@ -36,7 +63,7 @@ fn main() {
         let mut tot_g: u8 = (tot_g / size) as u8;
         let mut tot_b: u8 = (tot_b / size) as u8;
 
-        if SETTINGS.use_linear_rgb {
+        if args.use_linear_rgb {
             let [r, g, b] = srgb::gamma::linear_from_u8([tot_r, tot_g, tot_b]);
 
             tot_r = (r * 255.0) as u8;
@@ -45,14 +72,14 @@ fn main() {
         }
 
         let request_str = format!(
-            "http://{}/setRGBA?r={}&g={}&b={}",
-            SETTINGS.stripe_server_endpoint, tot_r, tot_g, tot_b
+            "{}://{}/setRGBA?r={}&g={}&b={}",
+            args.protocol, endpoint, tot_r, tot_g, tot_b
         );
         let resp = get(request_str);
         if resp.is_err() {
             eprintln!("{:?}", resp.err());
         }
 
-        sleep(Duration::from_millis(500));
+        sleep(Duration::from_millis(args.wait_delay));
     }
 }

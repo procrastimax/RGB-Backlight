@@ -1,3 +1,2 @@
 [rgb-backlight]
 stripe_server_endpoint = "stripe.local"
-use_linear_rgb = false
