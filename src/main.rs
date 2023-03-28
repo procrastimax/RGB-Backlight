@@ -10,7 +10,12 @@ struct Args {
     #[arg(short, long, default_value_t = String::from("stripe.local"))]
     endpoint: String,
 
-    #[arg(short, long, default_value_t = 500, help="wait time before updating RGB values in ms")]
+    #[arg(
+        short,
+        long,
+        default_value_t = 300,
+        help = "wait time before updating RGB values in ms"
+    )]
     wait_delay: u64,
 
     #[arg(short, long, default_value_t = false)]
@@ -21,6 +26,14 @@ struct Args {
 
     #[arg(short, long, default_value_t = 0)]
     monitor: u8,
+
+    #[arg(
+        short,
+        long,
+        default_value_t = 25,
+        help = "color change threshold as a sum of all channels to be exceeded in order to trigger an RGB value change"
+    )]
+    threshold: u64,
 }
 
 #[toml_cfg::toml_config]
@@ -44,6 +57,8 @@ fn main() {
         args.protocol, endpoint
     );
     let mut capturer = Capturer::new(CaptureSource::Monitor(args.monitor.into())).unwrap();
+
+    let (mut last_r, mut last_g, mut last_b) = (0, 0, 0);
 
     loop {
         let ps = capturer.capture_frame().unwrap();
@@ -71,14 +86,23 @@ fn main() {
             tot_b = (b * 255.0) as u8;
         }
 
-        let request_str = format!(
-            "{}://{}/setRGBA?r={}&g={}&b={}",
-            args.protocol, endpoint, tot_r, tot_g, tot_b
-        );
-        let resp = get(request_str);
-        if resp.is_err() {
-            eprintln!("{:?}", resp.err());
+        let curr_sum: u64 = tot_r as u64 + tot_g as u64 + tot_b as u64;
+        let last_sum: u64 = last_r as u64 + last_g as u64 + last_b as u64;
+
+        if curr_sum.abs_diff(last_sum) > args.threshold {
+            let request_str = format!(
+                "{}://{}/setRGBA?r={}&g={}&b={}",
+                args.protocol, endpoint, tot_r, tot_g, tot_b
+            );
+            let resp = get(request_str);
+            if resp.is_err() {
+                eprintln!("{:?}", resp.err());
+            }
         }
+
+        last_r = tot_r;
+        last_g = tot_g;
+        last_b = tot_b;
 
         sleep(Duration::from_millis(args.wait_delay));
     }
