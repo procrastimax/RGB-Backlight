@@ -30,10 +30,18 @@ struct Args {
     #[arg(
         short,
         long,
-        default_value_t = 25,
+        default_value_t = 10,
         help = "color change threshold as a sum of all channels to be exceeded in order to trigger an RGB value change"
     )]
     threshold: u64,
+
+    #[arg(
+        short,
+        long,
+        default_value_t = 0.0,
+        help = "a factor specifying the change rate for the EMA smoothing with a window of 2, value of 0.0 disables smoothing"
+    )]
+    smooth_factor: f32,
 }
 
 #[toml_cfg::toml_config]
@@ -86,6 +94,16 @@ fn main() {
             tot_b = (b * 255.0) as u8;
         }
 
+        if args.smooth_factor > 0.0 {
+            // exponentially weighted moving average calculation
+            let w_1 = 1.0 - args.smooth_factor;
+            let w_2 = (1.0 - args.smooth_factor).powi(2);
+
+            tot_r = (((last_r as f32 * w_1) + (tot_r as f32 * w_2)) / (w_1 + w_2)).round() as u8;
+            tot_g = (((last_g as f32 * w_1) + (tot_g as f32 * w_2)) / (w_1 + w_2)).round() as u8;
+            tot_b = (((last_b as f32 * w_1) + (tot_b as f32 * w_2)) / (w_1 + w_2)).round() as u8;
+        }
+
         let curr_sum: u64 = tot_r as u64 + tot_g as u64 + tot_b as u64;
         let last_sum: u64 = last_r as u64 + last_g as u64 + last_b as u64;
 
@@ -100,10 +118,7 @@ fn main() {
             }
         }
 
-        last_r = tot_r;
-        last_g = tot_g;
-        last_b = tot_b;
-
+        (last_r, last_g, last_b) = (tot_r, tot_g, tot_b);
         sleep(Duration::from_millis(args.wait_delay));
     }
 }

@@ -7,15 +7,13 @@ This average pixel color is then sent to the [ESP32-LED-Stripe-Server](https://g
 Usage: rgb-backlight [OPTIONS]
 
 Options:
-  -e, --endpoint <ENDPOINT>      [default: stripe.local]
-  -w, --wait-delay <WAIT_DELAY>  wait time before updating RGB values in ms [default: 300]
+  -e, --endpoint <ENDPOINT>            [default: stripe.local]
+  -w, --wait-delay <WAIT_DELAY>        wait time before updating RGB values in ms [default: 300]
   -u, --use-linear-rgb
-  -p, --protocol <PROTOCOL>      [default: http]
-  -m, --monitor <MONITOR>        [default: 0]
-  -t, --threshold <THRESHOLD>    color change threshold as a sum of all channels to be exceeded in order to trigger an RGB value change [default: 25]
-  -h, --help                     Print help
-  -V, --version                  Print version
+  -p, --protocol <PROTOCOL>            [default: http]
+  -m, --monitor <MONITOR>              [default: 0]
+  -t, --threshold <THRESHOLD>          color change threshold as a sum of all channels to be exceeded in order to trigger an RGB value change [default: 10]
+  -s, --smooth-factor <SMOOTH_FACTOR>  a factor specifying the change rate for the EMA smoothing with a window of 2, value of 0.0 disables smoothing [default: 0]
+  -h, --help                           Print help
+  -V, --version                        Print version
 ```
-
-## TODO
-- smooth out RGB changes which are "too intense" -> maybe use some kind of moving average?
