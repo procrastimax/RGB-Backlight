@@ -10,7 +10,7 @@ struct Args {
     #[arg(short, long, default_value_t = String::from("stripe.local"))]
     endpoint: String,
 
-    #[arg(short, long, default_value_t = 500)]
+    #[arg(short, long, default_value_t = 500, help="wait time before updating RGB values in ms")]
     wait_delay: u64,
 
     #[arg(short, long, default_value_t = false)]
