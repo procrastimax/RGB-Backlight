@@ -33,7 +33,7 @@ struct Args {
     #[arg(
         short,
         long,
-        default_value_t = 10,
+        default_value_t = 3,
         help = "color change threshold as a sum of all channels to be exceeded in order to trigger an RGB value change"
     )]
     threshold: u64,
