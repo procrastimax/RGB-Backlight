@@ -1,6 +1,9 @@
 use clap::Parser;
 use reqwest::blocking::get;
 use srgb;
+use std::fmt::format;
+use std::io::Write;
+use std::net::TcpStream;
 use std::{thread::sleep, time::Duration};
 use x11cap::*;
 
@@ -68,6 +71,12 @@ fn main() {
 
     let (mut last_r, mut last_g, mut last_b) = (0, 0, 0);
 
+    let mut tcp_stream = TcpStream::connect(format!("{}:80", endpoint))
+        .expect("could not connect to TCP stream endpoint");
+
+    println!("conected to tcp!");
+
+
     loop {
         let ps = capturer.capture_frame().unwrap();
 
@@ -108,14 +117,20 @@ fn main() {
         let last_sum: u64 = last_r as u64 + last_g as u64 + last_b as u64;
 
         if curr_sum.abs_diff(last_sum) > args.threshold {
-            let request_str = format!(
-                "{}://{}/setRGBA?r={}&g={}&b={}",
-                args.protocol, endpoint, tot_r, tot_g, tot_b
-            );
-            let resp = get(request_str);
-            if resp.is_err() {
-                eprintln!("{:?}", resp.err());
-            }
+            // TCP
+            tcp_stream
+                .write(format!("r={},g={},b={}\n", tot_r, tot_g, tot_b).as_bytes())
+                .unwrap();
+
+            // HTTP
+            //    let request_str = format!(
+            //        "{}://{}/setRGBA?r={}&g={}&b={}",
+            //        args.protocol, endpoint, tot_r, tot_g, tot_b
+            //    );
+            //    let resp = get(request_str);
+            //    if resp.is_err() {
+            //        eprintln!("{:?}", resp.err());
+            //    }
         }
 
         (last_r, last_g, last_b) = (tot_r, tot_g, tot_b);
