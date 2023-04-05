@@ -32,7 +32,7 @@ struct Args {
     )]
     threshold: u64,
 
-    #[arg(short, long, default_value_t = 15)]
+    #[arg(short, long, default_value_t = 25)]
     window_length: i32,
 }
 
